@@ -1,0 +1,20 @@
+{
+  "name": "pi-litellm-node",
+  "version": "0.1.0",
+  "description": "Pi footer: LiteLLM backend node of the last request, plus a warning when session affinity is off.",
+  "keywords": [
+    "pi-package",
+    "litellm",
+    "session-affinity"
+  ],
+  "pi": {
+    "extensions": [
+      "./extensions/litellm-node.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=1.5.0",
+    "@earendil-works/pi-tui": ">=1.5.0"
+  },
+  "license": "GPL-3.0-only"
+}
