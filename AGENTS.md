@@ -33,6 +33,8 @@ It displays the backend host of the last request in the footer, with a red
 - `before_provider_headers` runs BEFORE Pi adds its own session-affinity header.
   It only observes overrides by other extensions. Otherwise, infer affinity from
   the model API and compatibility flags through `sendsSessionId`.
+- LiteLLM also accepts a body-level `metadata.session_id`; `payloadSessionId`
+  checks it in `before_provider_request` and counts it as sticky.
 
 ## Verification
 

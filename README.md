@@ -36,7 +36,9 @@ are still resident. Stickiness keeps a session on the node that already holds th
 
 ## Enable it
 
-**Pi** (`~/.pi/agent/models.json`, provider or model level):
+Pi can carry the session id in two ways; LiteLLM reads both.
+
+**Header** (`~/.pi/agent/models.json`, provider or model level):
 
 ```json
 "compat": { "sendSessionAffinityHeaders": true, "sessionAffinityFormat": "openrouter" }
@@ -50,16 +52,18 @@ Only the `openrouter` format emits that header; the `openai` formats send
 ignores. `prompt_cache_key` is a separate mechanism, not LiteLLM affinity; whether Pi
 sends it depends on the API and the cache retention.
 
-**Gateway** (`config.yaml`, then restart — it is read at `Router.__init__`):
+**Body** — LiteLLM also reads `metadata.session_id`, so a small
+`before_provider_request` hook can add it without touching `compat`:
 
-```yaml
-router_settings:
-  redis_host: redis                     # pins must be shared across workers
-  redis_port: 6379                      # host and port, or a redis_url
-  deployment_affinity_ttl_seconds: 600
-  model_group_affinity_config:
-    <your-model-group>: ["session_affinity"]
+```ts
+pi.on("before_provider_request", (event, ctx) => ({
+  ...event.payload,
+  metadata: { ...event.payload?.metadata, session_id: ctx.sessionManager.getSessionId() },
+}));
 ```
+
+The gateway must have `session_affinity` enabled for the model group; that side is
+not covered here.
 
 ## Behavior
 

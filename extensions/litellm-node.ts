@@ -65,6 +65,22 @@ export function affinityHeaderState(headers: Headers | null | undefined): "prese
 }
 
 /**
+ * Session id carried in the request body instead of a header. LiteLLM's affinity
+ * check reads `metadata.session_id` (or `litellm_metadata.session_id`) too, so a
+ * `before_provider_request` hook can deliver stickiness without the compat flags.
+ */
+export function payloadSessionId(payload: unknown): string | undefined {
+	const body = payload as
+		| { metadata?: Record<string, unknown>; litellm_metadata?: Record<string, unknown> }
+		| undefined;
+	for (const meta of [body?.metadata, body?.litellm_metadata]) {
+		const value = meta?.session_id;
+		if (typeof value === "string" && SESSION_ID_VALUE.test(value)) return value;
+	}
+	return undefined;
+}
+
+/**
  * Does Pi send a session id LiteLLM reads, for this model? Mirrors Pi's own
  * per-API compat resolution; `undefined` means the API is not modelled here, so
  * nothing is claimed either way.
@@ -288,6 +304,14 @@ export default function (pi: ExtensionAPI) {
 		requestGeneration = generation;
 		const override = affinityHeaderState(event?.headers);
 		sticky = override === "present" ? true : override === "removed" ? false : sendsSessionId(ctx.model);
+		publish(ctx);
+	});
+
+	// A body-level session id counts as well: LiteLLM reads metadata.session_id.
+	pi.on("before_provider_request", (event, ctx) => {
+		if (!ctx.hasUI) return;
+		if (!payloadSessionId(event?.payload)) return;
+		sticky = true;
 		publish(ctx);
 	});
 
